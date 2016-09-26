@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:mvc="http://www.springframework.org/schema/mvc" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"  
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+		http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+		http://www.springframework.org/schema/context
+		http://www.springframework.org/schema/context/spring-context-3.2.xsd
+		http://www.springframework.org/schema/mvc
+		http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd
+		http://www.springframework.org/schema/aop   
+    	http://www.springframework.org/schema/aop/spring-aop-3.2.xsd ">
+
+	<!-- 启动Spring MVC的注解功能，完成请求和注解POJO的映射 -->
+	<mvc:annotation-driven >
+	    <mvc:message-converters register-defaults="true">
+			<!-- 将StringHttpMessageConverter的默认编码设为UTF-8 -->
+			<bean class="org.springframework.http.converter.StringHttpMessageConverter">
+		    	<constructor-arg value="UTF-8" />
+			</bean>
+			<bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">  
+			  	<property name="prefixJson" value="false" />
+               	<property name="supportedMediaTypes">
+                    <list>
+                        <value>application/json</value>
+                        <value>text/json</value>
+                    </list>
+               	</property>
+               	<!-- 日期格式化 -->
+               <property name="objectMapper">  
+                   <bean class="com.fasterxml.jackson.databind.ObjectMapper">  
+                       <property name="dateFormat">  
+                           <bean class="java.text.SimpleDateFormat">  
+                               <constructor-arg type="java.lang.String" value="yyyy-MM-dd HH:mm:ss" />  
+                           </bean>  
+                       </property>  
+                   </bean>  
+               </property>  
+	         </bean>  
+  		</mvc:message-converters>
+	</mvc:annotation-driven>
+	
+    <!-- 自动扫描controller包下的所有类，使其认为spring mvc的控制器 -->
+ 	<context:component-scan base-package="com.proxy.http.controller" />
+	
+	<!-- 对模型视图名称的解析，即在模型视图名称添加前后缀,返回普通的jsp视图 -->
+	<bean class="org.springframework.web.servlet.view.InternalResourceViewResolver" 
+	p:prefix="/WEB-INF/jsp/" p:suffix=".jsp" p:viewClass="com.proxy.http.plug.JstlViewPlus" />
+	
+	<bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<property name="defaultEncoding" value="UTF-8" />
+		<property name="maxUploadSize" value="209715200" /><!-- 上传文件大小限制为200M，200*1024*1024 -->
+		<property name="maxInMemorySize" value="4096" />
+	</bean>
+	
+	<!-- SpringMVC在超出上传文件限制时,会抛出org.springframework.web.multipart.MaxUploadSizeExceededException -->  
+    <!-- 该异常是SpringMVC在检查上传的文件信息时抛出来的,而且此时还没有进入到Controller方法中 -->  
+    <bean id="exceptionResolver" class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">  
+        <property name="exceptionMappings">  
+            <props>  
+                <!-- 遇到MaxUploadSizeExceededException异常时,自动跳转到/WEB-INF/jsp/error_fileupload.jsp页面 -->  
+                <prop key="org.springframework.web.multipart.MaxUploadSizeExceededException">error_fileupload</prop>  
+            </props>  
+        </property>  
+    </bean>
+	
+	<!--  静态资源 -->
+	<mvc:resources mapping="/css/**" location="/css/" />
+	<mvc:resources mapping="/js/**" location="/js/" />
+	<mvc:resources mapping="/image/**" location="/image/" />
+   
+</beans>
